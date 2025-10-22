@@ -2,45 +2,44 @@
 #include <DallasTemperature.h>
 #include <ESP32Servo.h>
 
-// === Pin Definition ===
-#define ONE_WIRE_BUS 4     // DS18B20 Data pin
-#define PH_PIN 34          // Potentiometer (simulasi pH)
-#define TURBIDITY_PIN 35   // Sensor kejernihan air (LDR AO)
+// Definisi PIN
+#define ONE_WIRE_BUS 4     // DS18B20 
+#define PH_PIN 34          // Potentiometer (Simulasi pH)
+#define TURBIDITY_PIN 35   // Sensor Kejernihan Air
 #define SERVO_PIN 15       // Servo Feeder
 
-// === LED Indicators ===
-#define LED_PH_ABNORMAL 27   // Merah = pH abnormal
-#define LED_PH_NORMAL 26     // Hijau = pH normal
-#define LED_TEMP_COLD 33     // Biru = suhu dingin
-#define LED_TEMP_HOT 32      // Oranye = suhu panas
+// Indikator PIN
+#define LED_PH_ABNORMAL 27   // Merah = pH Abnormal
+#define LED_PH_NORMAL 26     // Hijau = pH Normal
+#define LED_TEMP_COLD 33     // Biru = Suhu Dingin
+#define LED_TEMP_HOT 32      // Oranye = Suhu Panas
 
-// === Object Initialization ===
+// Inisialisasi Objek
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 Servo feeder;
 
-// === Variables ===
+// Variabel
 float phValue = 7.0;
 float temperature = 25.0;
-float clarity = 0.0;  // kejernihan dalam persen
+float clarity = 0.0;  // Kejernihan (Presentase)
 float lastTemp = 25.0;
 
-// === Thresholds ===
+// Treshold
 const float PH_LOW = 6.8;
 const float PH_HIGH = 7.8;
 
 const float TEMP_LOW = 24.0;
 const float TEMP_HIGH = 28.0;
 
-const float CLARITY_LOW = 40.0; // di bawah ini dianggap keruh
-const float CLARITY_HIGH = 70.0; // di atas ini dianggap sangat jernih
+const float CLARITY_LOW = 40.0; // Dibawah Nilai ini Keruh
+const float CLARITY_HIGH = 70.0; // Diatas Nilai ini Jernih
 
 unsigned long lastFeed = 0;
-const unsigned long FEED_INTERVAL = 20000UL; // 20 detik (simulasi feeding)
+const unsigned long FEED_INTERVAL = 20000UL; // 20 Detik Waktu Feeding (Simulasi)
 
-// ------------------------------------------
-// Fungsi pembacaan suhu yang stabil
-// ------------------------------------------
+
+// Fungsi Pembacaan Suhu
 float getStableTemperature(int sampleCount = 5) {
   float total = 0;
   for (int i = 0; i < sampleCount; i++) {
@@ -56,9 +55,7 @@ float getStableTemperature(int sampleCount = 5) {
   return avg;
 }
 
-// ------------------------------------------
-// SETUP
-// ------------------------------------------
+// Fungsi Setup
 void setup() {
   Serial.begin(115200);
   Serial.println("\n========================================");
@@ -69,14 +66,14 @@ void setup() {
   sensors.begin();
   feeder.attach(SERVO_PIN);
 
-  // Inisialisasi pin
+  // Inisialisasi PIN
   pinMode(LED_PH_NORMAL, OUTPUT);
   pinMode(LED_PH_ABNORMAL, OUTPUT);
   pinMode(LED_TEMP_COLD, OUTPUT);
   pinMode(LED_TEMP_HOT, OUTPUT);
   pinMode(TURBIDITY_PIN, INPUT);
 
-  // Matikan semua LED di awal
+  // Matikan Semua LED (Default)
   digitalWrite(LED_PH_NORMAL, LOW);
   digitalWrite(LED_PH_ABNORMAL, LOW);
   digitalWrite(LED_TEMP_COLD, LOW);
@@ -87,22 +84,22 @@ void setup() {
   Serial.println("✅ Sistem siap dijalankan!\n");
 }
 
-// ------------------------------------------
-// LOOP
-// ------------------------------------------
+// Fungsi Loop
 void loop() {
-  // ==== Baca suhu dari DS18B20 ====
+  // Baca Sensoe DS18B20
   temperature = getStableTemperature();
 
-  // ==== Baca potensiometer sebagai simulasi pH ====
+  // Baca Pontentiometer (Simulasi Sensor pH - Probe/Amplifier)
   int rawPh = analogRead(PH_PIN);
   phValue = map(rawPh, 0, 4095, 0, 140) / 10.0;
 
-  // ==== Baca kejernihan air dari LDR (AO) ====
+  // Baca Kejernihan Air LDR (Simulasi Sensor Kejernihan Air - Turbidity)
   int rawClarity = analogRead(TURBIDITY_PIN);
-  clarity = map(rawClarity, 0, 4095, 0, 100); // ubah ke persen (0–100%)
 
-  // ==== Cetak data di Serial Monitor ====
+  // Ubah ke Presentase
+  clarity = map(rawClarity, 0, 4095, 0, 100);
+
+  // Cetak ke Serial Monitor
   Serial.println("========================================");
   Serial.print("📊 Nilai pH Air       : ");
   Serial.println(phValue, 2);
@@ -113,7 +110,7 @@ void loop() {
   Serial.print(clarity, 1);
   Serial.println(" %");
 
-  // ==== Logika kontrol pH ====
+  // Logika Kontrol pH
   if (phValue < PH_LOW) {
     digitalWrite(LED_PH_ABNORMAL, HIGH);
     digitalWrite(LED_PH_NORMAL, LOW);
@@ -130,7 +127,7 @@ void loop() {
     Serial.println("✅ Status pH          : NORMAL (6.8–7.8)");
   }
 
-  // ==== Logika kontrol suhu ====
+  // Logika Kontrol Suhu
   if (temperature < TEMP_LOW) {
     digitalWrite(LED_TEMP_COLD, HIGH);
     digitalWrite(LED_TEMP_HOT, LOW);
@@ -145,26 +142,26 @@ void loop() {
     Serial.println("🌡️  Status Suhu       : NORMAL (24–28°C)");
   }
 
-  // ==== Logika kejernihan air ====
+  // Logika Kejernihan Air
   if (clarity < CLARITY_LOW) {
-    Serial.println("💧 Status Kejernihan  : KERUH (perlu filtrasi ulang)");
+    Serial.println("💧 Status Kejernihan  : Keruh (Perlu Filtrasi)");
   } else if (clarity > CLARITY_HIGH) {
-    Serial.println("💧 Status Kejernihan  : JERNIH (optimal)");
+    Serial.println("💧 Status Kejernihan  : Jernih (Optimal)");
   } else {
-    Serial.println("💧 Status Kejernihan  : NORMAL (masih aman)");
+    Serial.println("💧 Status Kejernihan  : Normal (Masih Aman)");
   }
 
-  // ==== Feeding Otomatis ====
+  // Logika Feeding Otomatis
   if (millis() - lastFeed >= FEED_INTERVAL) {
     lastFeed = millis();
-    Serial.println("🐟 Feeding System     : AKTIF - Servo membuka wadah pakan...");
+    Serial.println("Feeding System     : Aktif - Servo Membuka Wadah Pakan...");
     feeder.write(90);
     delay(1500);
     feeder.write(0);
-    Serial.println("✅ Feeding System     : SELESAI - Servo kembali ke posisi awal");
+    Serial.println("✅ Feeding System     : Selesai - Servo Kembali ke Posisi Awal...");
   } else {
     unsigned long sisa = (FEED_INTERVAL - (millis() - lastFeed)) / 1000;
-    Serial.print("⏱️  Feeding berikut dalam : ");
+    Serial.print("Feeding berikut dalam : ");
     Serial.print(sisa);
     Serial.println(" detik");
   }
